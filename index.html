@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MatMniam — Dodawanie i Odejmowanie do 300</title>
+  <meta name="description" content="Prosta gra do nauki dodawania i odejmowania dla dzieci. Zakres do 300, poziomy trudności, triki i wizualizacje." />
+  <style>
+    /* --- Reset i zmienne --- */
+    :root{
+      --bg:#0b1020; --card:#11172b; --muted:#1a2240; --text:#ecf1ff; --sub:#b9c4ff;
+      --ok:#29d67e; --bad:#ff6b6b; --brand:#7aa2ff; --accent:#ffd166; --ring:#5b77ff;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
+      color:var(--text); background:linear-gradient(180deg,#0b1020 0%, #0c1430 100%) fixed;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    .container{max-width:900px;margin:0 auto;padding:16px}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .title{display:flex;align-items:center;gap:10px}
+    .logo{width:40px;height:40px;border-radius:10px;background:
+      conic-gradient(from 0deg,var(--brand),#9ce0ff,#b3a6ff,var(--brand));
+      box-shadow:0 0 20px #365dff55 inset, 0 0 10px #365dff55;
+    }
+    h1{font-size:20px;margin:0}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tab-btn{
+      background:var(--muted);border:1px solid #ffffff12;color:var(--text);
+      padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:600;
+    }
+    .tab-btn[aria-selected="true"]{outline:2px solid var(--ring); background:#22306b}
+    main{display:grid;gap:14px}
+    section.card{
+      background:radial-gradient(1200px 300px at 50% -80%, #3154ff22, transparent 70%), var(--card);
+      border:1px solid #ffffff10;border-radius:16px;padding:14px;
+      box-shadow:0 8px 30px #00000033, inset 0 1px 0 #ffffff09;
+    }
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .grow{flex:1 1 240px}
+    .pill{padding:6px 10px;border-radius:999px;background:#ffffff10;border:1px solid #ffffff15}
+    .grid{display:grid;gap:12px}
+    @media(min-width:780px){ .grid.cols-2{grid-template-columns:1.2fr .8fr} }
+
+    /* --- Gra --- */
+    .difficulty{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+    .chip{
+      border:1px solid #ffffff12;background:#1a2240;color:var(--text);
+      padding:6px 10px;border-radius:10px;cursor:pointer;font-weight:700
+    }
+    .chip[data-active="true"]{background:#2a3870; outline:2px solid var(--ring)}
+    .status{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .badge{background:#ffffff12;border:1px solid #ffffff18;border-radius:8px;padding:6px 10px}
+    .q-card{
+      display:grid;place-items:center;text-align:center;padding:16px;border-radius:14px;
+      border:1px dashed #ffffff20;background:#101838;
+    }
+    .question{font-size:clamp(28px,7vw,56px);font-weight:800;letter-spacing:1px}
+    .answer{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:8px}
+    input[type="text"].big{
+      font-size:28px;font-weight:800;text-align:center;width:120px;
+      padding:10px;border-radius:12px;border:2px solid #ffffff20;background:#0e1531;color:var(--text)
+    }
+    .btn{
+      padding:10px 14px;border:0;border-radius:12px;font-weight:800;cursor:pointer;
+      background:linear-gradient(180deg,#385bff,#2848d2); color:white;
+      box-shadow:0 6px 20px #2848d266;
+    }
+    .btn.secondary{background:#1e2a55}
+    .btn.ghost{background:#ffffff12}
+    .keyboard{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px}
+    .kbd{padding:12px;border-radius:10px;background:#1a2240;border:1px solid #ffffff12;cursor:pointer;font-weight:800}
+    .vis-area{display:grid;gap:10px}
+    .blocks{display:flex;gap:6px;flex-wrap:wrap}
+    .ten{width:20px;height:20px;background:var(--brand);border-radius:4px;box-shadow:0 0 0 2px #ffffff22 inset}
+    .one{width:20px;height:20px;background:var(--accent);border-radius:4px;box-shadow:0 0 0 2px #ffffff22 inset}
+    .numberline{position:relative;height:56px;background:#0e1531;border:1px solid #ffffff12;border-radius:10px;overflow:hidden}
+    .tick{position:absolute;bottom:0;width:1px;height:18px;background:#ffffff33}
+    .jump{position:absolute;bottom:18px;height:2px;background:var(--ok)}
+    .feedback{min-height:28px;font-weight:800}
+    .ok{color:var(--ok)} .bad{color:var(--bad)}
+    .stars{display:flex;gap:4px}
+    .star{width:16px;height:16px;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);background:#ffffff26}
+    .star.active{background:var(--accent)}
+    .confetti{pointer-events:none;position:fixed;inset:0}
+
+    details{border:1px solid #ffffff12;border-radius:12px;padding:10px;background:#101838}
+    details>summary{cursor:pointer;font-weight:800}
+    details+details{margin-top:8px}
+
+    .small{font-size:12px;color:var(--sub)}
+    .range{display:flex;gap:10px;align-items:center}
+    input[type="range"]{width:160px}
+
+    a.link{color:#a3c0ff}
+
+    /* focus */
+    :focus-visible{outline:3px solid var(--ring);outline-offset:2px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>MatMniam: Dodawanie i Odejmowanie</h1>
+          <div class="small">Zakres do 300 • Poziomy: Łatwy, Średni, Trudny, Mistrz</div>
+        </div>
+      </div>
+      <nav class="tabs" role="tablist" aria-label="Sekcje aplikacji">
+        <button class="tab-btn" role="tab" aria-selected="true" data-tab="gra">🎲 Gra</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="triki">🧠 Triki</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="ustawienia">⚙️ Ustawienia</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="postepy">📈 Postępy</button>
+      </nav>
+    </header>
+
+    <!-- GRA -->
+    <main>
+      <section id="gra" class="card" role="tabpanel" aria-labelledby="tab-gra">
+        <div class="grid cols-2">
+          <div class="grow">
+            <div class="difficulty" aria-label="Poziom trudności">
+              <button class="chip" data-level="easy" data-active="true">Łatwy</button>
+              <button class="chip" data-level="medium">Średni</button>
+              <button class="chip" data-level="hard">Trudny</button>
+              <button class="chip" data-level="master">Mistrz</button>
+            </div>
+            <div class="status">
+              <div class="badge">🎯 <span id="target-label">Do 20</span></div>
+              <div class="badge">🔥 Seria: <span id="streak">0</span></div>
+              <div class="badge">⭐ <span id="score">0</span></div>
+              <div class="stars" id="stars" aria-label="Gwiazdy">
+                <div class="star" aria-hidden="true"></div>
+                <div class="star" aria-hidden="true"></div>
+                <div class="star" aria-hidden="true"></div>
+              </div>
+            </div>
+
+            <div class="q-card" aria-live="polite">
+              <div class="question" id="question">3 + 5 = ?</div>
+              <div class="answer">
+                <input id="answer" class="big" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="Twoja odpowiedź" />
+                <button id="submit" class="btn">Sprawdź</button>
+                <button id="skip" class="btn ghost" title="Pomiń pytanie">↻</button>
+              </div>
+              <div class="keyboard" aria-hidden="false">
+                <button class="kbd">7</button><button class="kbd">8</button><button class="kbd">9</button><button class="kbd">⌫</button><button class="kbd">⮐</button>
+                <button class="kbd">4</button><button class="kbd">5</button><button class="kbd">6</button><button class="kbd">±</button><button class="kbd">↺</button>
+                <button class="kbd">1</button><button class="kbd">2</button><button class="kbd">3</button><button class="kbd">00</button><button class="kbd">0</button>
+              </div>
+              <div class="feedback" id="feedback"></div>
+            </div>
+          </div>
+
+          <div class="vis-area">
+            <div class="pill">🔍 Podpowiedzi wizualne</div>
+            <div class="small">Klocki dziesiątki/jedności</div>
+            <div class="blocks" id="blocks"></div>
+            <div class="small">Skoki po osi liczbowej</div>
+            <div class="numberline" id="numberline" aria-hidden="false"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRIKI -->
+      <section id="triki" class="card" role="tabpanel" hidden>
+        <h2>🧠 Triki na szybkie dodawanie i odejmowanie</h2>
+        <details open>
+          <summary>Komplety do 10 (1↔9, 2↔8, 3↔7...)</summary>
+          <p>Zapamiętaj pary, które składają się do 10. Np. <strong>8 + 2</strong>, <strong>6 + 4</strong>. Przy odejmowaniu od <em>pełnej dziesiątki</em> użyj pary od razu: 10 − 6 = 4.</p>
+        </details>
+        <details>
+          <summary>Dopełnianie do dziesiątki (przenoszenie)</summary>
+          <p>Przykład: 8 + 7 → najpierw <em>dopełnij 8 do 10</em> (dodaj 2), zostaje 5, więc <strong>10 + 5 = 15</strong>.</p>
+        </details>
+        <details>
+          <summary>Podwajanie i „prawie podwajanie”</summary>
+          <p>Jeśli znasz 7+7=14, to 7+8 to „o 1 więcej”, więc 15. Działa też w dół dla odejmowania.</p>
+        </details>
+        <details>
+          <summary>Rozbijanie liczby (dziesiątki + jedności)</summary>
+          <p>35 + 27 → (30 + 20) + (5 + 7) = 50 + 12 = <strong>62</strong>. W odejmowaniu podobnie: 54 − 27 → (50 − 20) + (4 − 7) → pożycz 10: (50 − 20 − 10) + (14 − 7) = 17.</p>
+        </details>
+        <details>
+          <summary>Odejmowanie jako „odliczanie wstecz”</summary>
+          <p>47 − 5 → cofaj o 5 kroków: 46,45,44,43,42. Przy większych liczbach skacz <em>dziesiątkami</em>, potem jednościami.</p>
+        </details>
+        <details>
+          <summary>Zmiana kolejności i łączenie (własności działań)</summary>
+          <p>3 + 7 + 2 = 3 + 2 + 7 = 12 (zawsze najpierw zrób wygodne pary: do 10, do 20...).</p>
+        </details>
+      </section>
+
+      <!-- USTAWIENIA -->
+      <section id="ustawienia" class="card" role="tabpanel" hidden>
+        <h2>⚙️ Ustawienia gry</h2>
+        <div class="grid cols-2">
+          <div class="grid">
+            <label class="range">Maksymalny wynik: <strong id="max-label">20</strong>
+              <input id="max-range" type="range" min="10" max="300" step="10" value="20" />
+            </label>
+            <div class="row">
+              <label class="pill">Tryb:
+                <select id="mode">
+                  <option value="+">Tylko dodawanie</option>
+                  <option value="-">Tylko odejmowanie</option>
+                  <option value="+-">Mieszane + i −</option>
+                </select>
+              </label>
+              <label class="pill">Ile zadań w rundzie:
+                <select id="round-size">
+                  <option>10</option><option selected>20</option><option>30</option>
+                </select>
+              </label>
+            </div>
+            <div class="row">
+              <label class="pill">
+                <input id="allow-negative" type="checkbox" /> Pozwól na wyniki ujemne (odejmowanie)
+              </label>
+              <label class="pill">
+                <input id="show-visuals" type="checkbox" checked /> Pokaż podpowiedzi wizualne
+              </label>
+            </div>
+            <div class="row">
+              <button id="reset-progress" class="btn secondary">Wyczyść postępy</button>
+              <button id="new-round" class="btn">Nowa runda</button>
+            </div>
+          </div>
+          <div>
+            <p class="small">
+              🔒 Twoje wyniki zapisują się tylko na tym urządzeniu (localStorage).  
+              Dla GitHub Pages wystarczy wrzucić ten plik jako <code>index.html</code>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- POSTĘPY -->
+      <section id="postepy" class="card" role="tabpanel" hidden>
+        <h2>📈 Postępy</h2>
+        <div class="grid">
+          <div class="row">
+            <div class="badge">Razem zadań: <strong id="stat-total">0</strong></div>
+            <div class="badge">Poprawne: <strong id="stat-correct">0</strong></div>
+            <div class="badge">Skuteczność: <strong id="stat-acc">0%</strong></div>
+            <div class="badge">Najlepsza seria: <strong id="stat-best">0</strong></div>
+          </div>
+          <div class="small">Historia ostatnich odpowiedzi:</div>
+          <div id="history" class="grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <canvas id="confetti" class="confetti"></canvas>
+
+  <script>
+    // ========================
+    //  MatMniam — logika gry
+    // ========================
+
+    // --- Stan gry i dom ---
+    const dom = {
+      tabs: document.querySelectorAll('.tab-btn'),
+      panels: { gra: '#gra', triki: '#triki', ustawienia: '#ustawienia', postepy: '#postepy' },
+      levelChips: document.querySelectorAll('.chip'),
+      targetLabel: document.getElementById('target-label'),
+      maxRange: document.getElementById('max-range'),
+      maxLabel: document.getElementById('max-label'),
+      mode: document.getElementById('mode'),
+      roundSize: document.getElementById('round-size'),
+      allowNegative: document.getElementById('allow-negative'),
+      showVisuals: document.getElementById('show-visuals'),
+      question: document.getElementById('question'),
+      answer: document.getElementById('answer'),
+      submit: document.getElementById('submit'),
+      skip: document.getElementById('skip'),
+      feedback: document.getElementById('feedback'),
+      keyboard: document.querySelector('.keyboard'),
+      blocks: document.getElementById('blocks'),
+      numberline: document.getElementById('numberline'),
+      streak: document.getElementById('streak'),
+      score: document.getElementById('score'),
+      stars: document.getElementById('stars'),
+      newRound: document.getElementById('new-round'),
+      resetProgress: document.getElementById('reset-progress'),
+      stats: {
+        total: document.getElementById('stat-total'),
+        correct: document.getElementById('stat-correct'),
+        acc: document.getElementById('stat-acc'),
+        best: document.getElementById('stat-best'),
+        history: document.getElementById('history'),
+      },
+      confetti: document.getElementById('confetti'),
+    };
+
+    const state = {
+      level: 'easy', // easy, medium, hard, master
+      mode: '+',     // +, -, +-
+      maxResult: 20, // ograniczenie wyniku/wyrażenia
+      allowNegative: false,
+      showVisuals: true,
+      streak: 0,
+      bestStreak: 0,
+      score: 0,
+      stars: 0,
+      roundLeft: 20,
+      history: [], // {q, user, ok, correct, ts}
+      current: null // {a,b,op,display,answer,type}
+    };
+
+    // --- Trwałe postępy (localStorage) ---
+    const STORAGE_KEY = 'matmniam_progress_v1';
+    function loadProgress(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return;
+        const saved = JSON.parse(raw);
+        ['bestStreak','score','history'].forEach(k=>{
+          if(saved[k] !== undefined) state[k] = saved[k];
+        });
+        updateStatsPanel();
+      }catch(e){}
+    }
+    function saveProgress(){
+      const data = { bestStreak: state.bestStreak, score: state.score, history: state.history.slice(-200) };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    // --- Generowanie zadań ---
+    // Kontrola: wynik i składniki w zakresie, brak ujemnych (chyba że włączone)
+    function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min }
+
+    function makeTask(){
+      const mode = state.mode === '+-' ? (Math.random()<0.5?'+':'-') : state.mode;
+      const L = state.level;
+      let maxA=10, maxB=10;
+
+      if(L==='easy'){ maxA=10; maxB=10; state.maxResult = Math.min(state.maxResult, 20); }
+      if(L==='medium'){ maxA=50; maxB=50; if(state.maxResult<50) state.maxResult=50; }
+      if(L==='hard'){ maxA=150; maxB=150; if(state.maxResult<150) state.maxResult=150; }
+      if(L==='master'){ maxA=300; maxB=300; state.maxResult=Math.max(state.maxResult, 200); }
+
+      // typy zadań w master: klasyk, brakujący składnik, równanie do pełnej dziesiątki
+      const masterType = (L!=='master') ? 'classic' : (['classic','missing','near10'][randInt(0,2)]);
+      let a,b,display,answer;
+
+      if(masterType==='near10' && mode==='+'){
+        // generuj tak, by dopełnić do dziesiątki
+        const tens = randInt(1, (state.maxResult/10)|0 )*10;
+        const left = randInt(Math.max(1,tens-9), tens-1);
+        const add = tens-left + randInt(0, Math.min(5, state.maxResult-tens));
+        a = left; b = add; answer = a + b; display = `${a} + ${b} = ?`;
+      }else if(masterType==='missing'){
+        // ? + b = c lub a - ? = c
+        if(mode==='+'){
+          b = randInt(1, Math.min(maxB, state.maxResult-1));
+          const c = randInt(b+1, state.maxResult);
+          a = c - b;
+          answer = a;
+          display = `? + ${b} = ${c}`;
+        }else{
+          a = randInt(1, state.maxResult);
+          const c = randInt(0, a);
+          b = a - c;
+          answer = b;
+          display = `${a} − ? = ${c}`;
+        }
+      }else{
+        // klasyczne a op b
+        a = randInt(0, maxA); b = randInt(0, maxB);
+        if(mode==='+'){
+          // kontrola maksymalnego wyniku
+          const limit = Math.min(state.maxResult, 300);
+          if(a + b > limit){ b = Math.max(0, limit - a); }
+          answer = a + b; display = `${a} + ${b} = ?`;
+        }else{
+          // odejmowanie: bez ujemnych jeśli wyłączone
+          if(!state.allowNegative && b>a){ [a,b]=[b,a] }
+          answer = a - b;
+          // gdy wynik przekracza limit w dół (ujemne), przerzuć na dodatnie jeśli nie wolno ujemnych
+          if(!state.allowNegative && answer<0){ answer = Math.abs(answer); [a,b]=[answer+b,b]; }
+          // limit modułu wyniku
+          if(Math.abs(answer) > state.maxResult){
+            // spróbuj przyciąć b
+            const target = Math.sign(answer)*state.maxResult + (state.allowNegative?0:Math.abs(0));
+            b = a - target;
+            answer = a - b;
+          }
+          display = `${a} − ${b} = ?`;
+        }
+      }
+      state.current = {a,b,op:mode,display,answer, type:masterType};
+      renderQuestion();
+      renderVisuals();
+    }
+
+    // --- Render ---
+    function renderQuestion(){
+      dom.question.textContent = state.current.display;
+      dom.answer.value = '';
+      dom.feedback.textContent = '';
+      dom.answer.focus();
+      dom.streak.textContent = state.streak;
+      dom.score.textContent = state.score;
+      // gwiazdki za serię
+      const s = state.stars = Math.min(3, Math.floor(state.streak/5));
+      [...dom.stars.children].forEach((el,i)=> el.classList.toggle('active', i < s));
+      dom.targetLabel.textContent = `Do ${state.maxResult}`;
+      dom.maxLabel.textContent = state.maxResult;
+    }
+
+    function renderBlocks(n){
+      // pokazuje dziesiątki (niebieskie) i jedności (żółte) dla |n|
+      dom.blocks.innerHTML = '';
+      const val = Math.abs(n);
+      const tens = Math.floor(val/10);
+      const ones = val%10;
+      for(let i=0;i<tens;i++){ const d=document.createElement('div'); d.className='ten'; d.title='10'; dom.blocks.appendChild(d); }
+      for(let i=0;i<ones;i++){ const d=document.createElement('div'); d.className='one'; d.title='1'; dom.blocks.appendChild(d); }
+    }
+
+    function renderNumberLine(a,b,op){
+      const box = dom.numberline;
+      box.innerHTML = '';
+      const limit = Math.max(10, Math.ceil((Math.max(a,b,a+b,a-b)+5)/10)*10);
+      for(let i=0;i<=limit;i+=10){
+        const t = document.createElement('div');
+        t.className='tick'; t.style.left = (i/limit*100)+'%';
+        t.title = i;
+        box.appendChild(t);
+      }
+      const start = a;
+      const step = (op==='+') ? b : -b;
+      const startX = Math.max(0, Math.min(100, (start/limit)*100));
+      const endX = Math.max(0, Math.min(100, ((start+step)/limit)*100));
+      const j = document.createElement('div');
+      j.className='jump';
+      j.style.left = Math.min(startX,endX)+'%';
+      j.style.width = Math.abs(endX - startX)+'%';
+      box.appendChild(j);
+    }
+
+    function renderVisuals(){
+      if(!state.showVisuals){ dom.blocks.innerHTML=''; dom.numberline.innerHTML=''; return; }
+      const {a,b,op} = state.current;
+      const target = (op==='+') ? a+b : a-b;
+      renderBlocks(target);
+      renderNumberLine(a,b,op);
+    }
+
+    // --- Sprawdzanie odpowiedzi ---
+    function checkAnswer(){
+      const raw = dom.answer.value.trim().replace(',', '.');
+      if(raw==='') return;
+      const user = Number(raw);
+      const correct = state.current.answer;
+      const ok = (user === correct);
+      const qText = state.current.display;
+      state.history.push({ q:qText, user, ok, correct, ts:Date.now() });
+      if(ok){
+        state.streak++;
+        state.score += 10 + Math.min(20, state.streak); // nagroda za serię
+        feedback('Brawo! ✅', true);
+        confetti();
+      }else{
+        state.streak = 0;
+        feedback(`Nie tak. Poprawna odpowiedź to ${correct}.`, false);
+      }
+      state.bestStreak = Math.max(state.bestStreak, state.streak);
+      state.roundLeft = Math.max(0, state.roundLeft - 1);
+      updateStatsPanel();
+      saveProgress();
+      if(state.roundLeft === 0){
+        feedback(`Runda zakończona! Wynik: ${state.score} pkt.`, true);
+        state.roundLeft = Number(dom.roundSize.value);
+      }
+      setTimeout(()=>{ makeTask() }, ok ? 600 : 900);
+    }
+
+    function feedback(msg, good){
+      dom.feedback.textContent = msg;
+      dom.feedback.className = 'feedback ' + (good?'ok':'bad');
+    }
+
+    // --- Postępy / statystyki ---
+    function updateStatsPanel(){
+      const total = state.history.length;
+      const correct = state.history.filter(h=>h.ok).length;
+      const acc = total ? Math.round(correct/total*100) : 0;
+      dom.stats.total.textContent = total;
+      dom.stats.correct.textContent = correct;
+      dom.stats.acc.textContent = acc + '%';
+      dom.stats.best.textContent = state.bestStreak;
+      // historia
+      dom.stats.history.innerHTML = '';
+      state.history.slice(-24).reverse().forEach(h=>{
+        const card = document.createElement('div');
+        card.className='card';
+        card.style.padding='8px';
+        card.innerHTML = `
+          <div style="font-weight:800">${h.q}</div>
+          <div class="${h.ok?'ok':'bad'}">Twoja: ${h.user} ${h.ok?'✓':'✗'} ${!h.ok?('→ '+h.correct):''}</div>
+          <div class="small">${new Date(h.ts).toLocaleTimeString()}</div>
+        `;
+        dom.stats.history.appendChild(card);
+      });
+    }
+
+    // --- Confetti mini ---
+    const ctx = dom.confetti.getContext('2d');
+    let confettiTimer=null;
+    function confetti(){
+      const w = dom.confetti.width = window.innerWidth;
+      const h = dom.confetti.height = window.innerHeight;
+      const pieces = Array.from({length: 80}, ()=>({
+        x: Math.random()*w, y: -10, s: 2+Math.random()*3, vy: 2+Math.random()*3, vx: -1+Math.random()*2, a: Math.random()*Math.PI
+      }));
+      cancelAnimationFrame(confettiTimer);
+      let frames = 0;
+      (function tick(){
+        ctx.clearRect(0,0,w,h);
+        pieces.forEach(p=>{
+          p.x+=p.vx; p.y+=p.vy; p.a+=0.1;
+          ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.a);
+          ctx.fillStyle = ['#ffd166','#29d67e','#7aa2ff','#ff6b6b'][p.s|0 % 4];
+          ctx.fillRect(-p.s, -p.s, p.s*2, p.s*2);
+          ctx.restore();
+        });
+        frames++;
+        if(frames<80) confettiTimer=requestAnimationFrame(tick);
+        else ctx.clearRect(0,0,w,h);
+      })();
+    }
+
+    // --- Zdarzenia UI ---
+    dom.tabs.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        dom.tabs.forEach(b=>b.setAttribute('aria-selected', 'false'));
+        btn.setAttribute('aria-selected','true');
+        const tab = btn.dataset.tab;
+        for(const [name, sel] of Object.entries(dom.panels)){
+          const el = document.querySelector(sel);
+          el.hidden = (name!==tab);
+        }
+      });
+    });
+
+    dom.levelChips.forEach(ch=>{
+      ch.addEventListener('click', ()=>{
+        dom.levelChips.forEach(x=>x.dataset.active='false');
+        ch.dataset.active='true';
+        state.level = ch.dataset.level;
+        // ustaw domyślny max dla poziomu
+        const defaults = { easy:20, medium:100, hard:300, master:300 };
+        state.maxResult = defaults[state.level];
+        dom.maxRange.value = state.maxResult;
+        dom.maxLabel.textContent = state.maxResult;
+        dom.targetLabel.textContent = `Do ${state.maxResult}`;
+        state.roundLeft = Number(dom.roundSize.value);
+        makeTask();
+      });
+    });
+
+    dom.maxRange.addEventListener('input', ()=>{
+      state.maxResult = Number(dom.maxRange.value);
+      dom.maxLabel.textContent = state.maxResult;
+      dom.targetLabel.textContent = `Do ${state.maxResult}`;
+      makeTask();
+    });
+    dom.mode.addEventListener('change', ()=>{ state.mode = dom.mode.value; makeTask(); });
+    dom.roundSize.addEventListener('change', ()=>{ state.roundLeft = Number(dom.roundSize.value); });
+    dom.allowNegative.addEventListener('change', ()=>{ state.allowNegative = dom.allowNegative.checked; makeTask(); });
+    dom.showVisuals.addEventListener('change', ()=>{
+      state.showVisuals = dom.showVisuals.checked;
+      document.querySelector('.vis-area').style.display = state.showVisuals ? '' : 'none';
+      renderVisuals();
+    });
+
+    dom.submit.addEventListener('click', checkAnswer);
+    dom.skip.addEventListener('click', ()=>{ feedback('Pominięto.', false); state.streak=0; renderQuestion(); makeTask(); });
+    dom.answer.addEventListener('keydown', (e)=>{ if(e.key==='Enter') checkAnswer(); });
+
+    dom.keyboard.addEventListener('click', (e)=>{
+      const t = e.target.closest('.kbd'); if(!t) return;
+      const val = t.textContent;
+      if(val==='⌫'){ dom.answer.value = dom.answer.value.slice(0,-1); dom.answer.focus(); return; }
+      if(val==='⮐'){ checkAnswer(); return; }
+      if(val==='↺'){ dom.answer.value=''; dom.answer.focus(); return; }
+      if(val==='±'){ if(dom.answer.value.startsWith('-')) dom.answer.value=dom.answer.value.slice(1); else dom.answer.value='-'+dom.answer.value; return; }
+      dom.answer.value += val;
+      dom.answer.focus();
+    });
+
+    dom.newRound.addEventListener('click', ()=>{
+      state.streak=0; state.roundLeft = Number(dom.roundSize.value);
+      feedback('Nowa runda start!', true);
+      makeTask();
+    });
+
+    dom.resetProgress.addEventListener('click', ()=>{
+      if(confirm('Na pewno usunąć zapisane postępy?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        state.score=0; state.bestStreak=0; state.history=[]; updateStatsPanel(); renderQuestion();
+      }
+    });
+
+    window.addEventListener('resize', ()=>{
+      // przerysowanie osi (dopasowanie do szerokości)
+      if(state.showVisuals) renderVisuals();
+    });
+
+    // --- Start ---
+    loadProgress();
+    // Domyślne ustawienia UI
+    dom.mode.value = state.mode;
+    dom.maxRange.value = state.maxResult;
+    dom.maxLabel.textContent = state.maxResult;
+    dom.targetLabel.textContent = `Do ${state.maxResult}`;
+    makeTask();
+
+    // Dostępność: focus na wejściu po przełączeniu karty "Gra"
+    document.querySelector('[data-tab="gra"]').addEventListener('click', ()=> setTimeout(()=>dom.answer.focus(), 80));
+  </script>
+</body>
+</html>
